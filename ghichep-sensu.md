@@ -146,7 +146,14 @@ apt-get install -y uchiwa
 }
 ```
 
-- Tạo file `vi /etc/sensu/conf.d/uchiwa.json` với nội dung sau.
+- Sao lưu fie ` /etc/sensu/uchiwa.json` mặc định
+```sh
+cp /etc/sensu/uchiwa.json /etc/sensu/uchiwa.json.bak
+```
+
+
+
+- Tạo file mới `vi /etc/sensu/uchiwa.json` với nội dung sau.
 ```sh
 {
     "sensu": [
@@ -194,12 +201,23 @@ sudo service sensu-api start
 sudo service uchiwa start
 ```
 
+- Truy cập vào Dashboard với địa chỉ `http://ip-address:3000`
+
+#### Cấu hình Sensu client trên server 
+
+- Lúc này coi máy cài Sensu Server là một client.
+
+
+
+
 
 ##### Link tham khảo
 
 1. https://github.com/znxs/sensu-installation/blob/master/install-sensu-server.sh
 2. https://github.com/ninja76/sensu-flapjack
 3. http://roobert.github.io/2015/11/09/Sensu-What/
+4. https://www.digitalocean.com/community/tutorials/how-to-configure-sensu-monitoring-rabbitmq-and-redis-on-ubuntu-14-04
+
 
 
 
