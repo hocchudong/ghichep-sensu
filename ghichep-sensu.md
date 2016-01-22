@@ -30,24 +30,55 @@ sudo update-rc.d rabbitmq-server defaults
 sudo /etc/init.d/rabbitmq-server start
 ```
 
+- Cấu hình SSL
+```sh
+wget http://sensuapp.org/docs/0.21/files/sensu_ssl_tool.tar
+tar -xvf sensu_ssl_tool.tar
+
+cd sensu_ssl_tool/
+
+./ssl_certs.sh generate
+
+mkdir -p /etc/rabbitmq/ssl && cp /root/sensu_ssl_tool/sensu_ca/cacert.pem /root/sensu_ssl_tool/server/cert.pem /root/sensu_ssl_tool/server/key.pem /etc/rabbitmq/ssl
+```
+
+- Sửa file `vi /etc/rabbitmq/rabbitmq.config` với nội dung dưới đây
+```sh
+[
+    {rabbit, [
+    {ssl_listeners, [5671]},
+    {ssl_options, [{cacertfile,"/etc/rabbitmq/ssl/cacert.pem"},
+                   {certfile,"/etc/rabbitmq/ssl/cert.pem"},
+                   {keyfile,"/etc/rabbitmq/ssl/key.pem"},
+                   {verify,verify_peer},
+                   {fail_if_no_peer_cert,true}]}
+  ]}
+].
+```
+
+- Khởi động lại RABBITMQ
+```
+service rabbitmq-server restart
+```
+
+
 - Cấu hình cho RABBITMQ
 ```sh
-sudo rabbitmqctl add_vhost /sensu
-sudo rabbitmqctl add_user sensu secret
-sudo rabbitmqctl set_permissions -p /sensu sensu ".*" ".*" ".*"
+rabbitmqctl add_vhost /sensu
+rabbitmqctl add_user sensu secret
+rabbitmqctl set_permissions -p /sensu sensu ".*" ".*" ".*"
 ```
 
 ### Cài đặt REDDIS
 - Cài đặt REDDIS
 ```sh
-sudo apt-get -y update
 sudo apt-get -y install redis-server
 ```
 
 - Khởi động REDDIS cùng OS
 ```sh
-sudo update-rc.d redis-server defaults
-sudo /etc/init.d/redis-server start
+update-rc.d redis-server defaults
+/etc/init.d/redis-server start
 ```
 
 #### Cài đặt SENSU
@@ -60,18 +91,108 @@ echo "deb     http://repositories.sensuapp.org/apt sensu main" | sudo tee /etc/a
 
 - Thực hiện cài SENSU sau khi khai báo repos
 ```sh
-sudo apt-get -y update
-sudo apt-get -y install sensu
+apt-get -y update
+apt-get -y install sensu
+```
+
+- Cấu hình SSL cho SENSU
+```
+sudo mkdir -p /etc/sensu/ssl && cp /root/sensu_ssl_tool/sensu_ca/cacert.pem /root/sensu_ssl_tool/server/cert.pem /root/sensu_ssl_tool/server/key.pem /etc/sensu/ssl
+```
+
+ Cài đặt uchiwa làm dashboard cho SENSU
+```sh
+apt-get install -y uchiwa
 ```
 
 
-- Cấu hình cho SENSU
+### Cấu hình cho SENSU
+
+- Tạo file `vi /etc/sensu/conf.d/rabbitmq.json` với nội dung sau
+```sh 
+{
+  "rabbitmq": {
+    "ssl": {
+      "cert_chain_file": "/etc/sensu/ssl/cert.pem",
+      "private_key_file": "/etc/sensu/ssl/key.pem"
+    },
+    "host": "localhost",
+    "port": 5671,
+    "vhost": "/sensu",
+    "user": "sensu",
+    "password": "pass"
+  }
+}
+
+```
+
+- Tạo file  `vi /etc/sensu/conf.d/redis.json` với nội dung sau.
 ```sh
+{
+  "redis": {
+    "host": "localhost",
+    "port": 6379
+  }
+}
+```
 
+- Tạo file `vi /etc/sensu/conf.d/api.json` với nội dung sau.
+```sh
+{
+  "api": {
+    "host": "localhost",
+    "port": 4567
+  }
+}
+```
 
+- Tạo file `vi /etc/sensu/conf.d/uchiwa.json` với nội dung sau.
+```sh
+{
+    "sensu": [
+        {
+            "name": "Sensu",
+            "host": "localhost",
+            "ssl": false,
+            "port": 4567,
+            "path": "",
+            "timeout": 5000
+        }
+    ],
+    "uchiwa": {
+        "port": 3000,
+        "stats": 10,
+        "refresh": 10000
+    }
+}
+```
 
+- Tạo file ` vi /etc/sensu/conf.d/client.json` với nội dung sau.
+```sh
+{
+  "client": {
+    "name": "server",
+    "address": "localhost",
+    "subscriptions": [ "ALL" ]
+  }
+}
+```
 
+- Kích hoạt các dịch vụ khởi động cùng OS
+```sh
+sudo update-rc.d sensu-server defaults
+sudo update-rc.d sensu-client defaults
+sudo update-rc.d sensu-api defaults
+sudo update-rc.d uchiwa defaults
+```
 
+- Khởi động lại các dịch vụ.
+```sh
+sudo service sensu-server start
+sudo service sensu-client start
+sudo service sensu-api start
+sudo service uchiwa start
+```
 
 
 ##### Link tham khảo
