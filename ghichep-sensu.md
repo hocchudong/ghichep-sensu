@@ -22,6 +22,11 @@ sudo apt-get -y install erlang-nox=1:18.2
 ```sh
 sudo wget http://www.rabbitmq.com/releases/rabbitmq-server/v3.6.0/rabbitmq-server_3.6.0-1_all.deb
 sudo dpkg -i rabbitmq-server_3.6.0-1_all.deb
+
+curl -L -o ~/rabbitmq-signing-key-public.asc http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
+
+sudo apt-key add ~/rabbitmq-signing-key-public.asc
+
 ```
 
 - Khởi động RABBITMQ
